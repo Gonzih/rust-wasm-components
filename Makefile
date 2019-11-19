@@ -1,4 +1,5 @@
 build:
+	@echo
 	wasm-pack build
 
 npm-install:
