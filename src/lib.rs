@@ -76,5 +76,7 @@ pub fn run() {
     let mut framework = Framework::new();
     framework.register_template("main", "<p>hello<p>".to_string());
     framework.register_component("root", Box::new(|| Box::new(Root::new())));
-    framework.mount("framework-root", "root");
+    framework
+        .mount("framework-root", "root")
+        .expect("could not mount component");
 }
