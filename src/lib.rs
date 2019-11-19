@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::io;
 use wasm_bindgen::prelude::*;
-use web_sys::Document;
 
 macro_rules! log {
     ( $( $t:tt )* ) => {
@@ -51,7 +50,9 @@ impl Framework {
 
     fn mount(&mut self, target_id: &'static str, root_component: &'static str) -> io::Result<()> {
         log!("Mounting {} into #{}", root_component, target_id);
-        Document::new()
+        web_sys::window()
+            .expect("could not get window")
+            .document()
             .expect("could not get js/document instance")
             .get_element_by_id(target_id)
             .expect(&*format!("could not find target element {}", target_id))
@@ -79,9 +80,7 @@ impl Component for Root {
     fn doathing(&self) {}
 }
 
-// ************** Entrypoint **************
-#[wasm_bindgen]
-pub fn run() {
+fn test_html_parser() {
     let opts = ParseOpts {
         tree_builder: TreeBuilderOpts {
             drop_doctype: true,
@@ -96,12 +95,19 @@ pub fn run() {
         .unwrap();
 
     log!("Doc: {:#?}", dom.document);
+}
 
+// ************** Entrypoint **************
+#[wasm_bindgen]
+pub fn run() {
     utils::set_panic_hook();
+
+    test_html_parser();
+
     let mut framework = Framework::new();
     framework.register_template("main", "<p>hello<p>".to_string());
     framework.register_component("root", Box::new(|| Box::new(Root::new())));
     framework
-        .mount("framework-root", "root")
+        .mount("main-container", "root")
         .expect("could not mount component");
 }
