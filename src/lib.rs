@@ -21,6 +21,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 type ComponentConstructor = Box<dyn Fn() -> Box<dyn Component>>;
 
+// ************** Framework structure **************
 struct Framework {
     templates: HashMap<&'static str, String>,
     components: HashMap<&'static str, ComponentConstructor>,
@@ -49,15 +50,17 @@ impl Framework {
             .get_element_by_id(target_id)
             .expect(&*format!("could not find target element {}", target_id))
             .set_inner_html("MOUNTED!");
+
         Ok(())
     }
 }
 
-// part of the lib
+// ************** Trait that enforces component specific methods **************
 trait Component {
     fn doathing(&self);
 }
 
+// ************** Sample component **************
 struct Root {}
 
 impl Root {
@@ -70,6 +73,7 @@ impl Component for Root {
     fn doathing(&self) {}
 }
 
+// ************** Entrypoint **************
 #[wasm_bindgen]
 pub fn run() {
     utils::set_panic_hook();
