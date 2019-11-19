@@ -10,3 +10,6 @@ serve: npm-install
 
 watch-build:
 	cargo watch -w src/ -s 'make build'
+
+dev-env:
+	$(MAKE) -j 2 watch-build serve
