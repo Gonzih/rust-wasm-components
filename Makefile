@@ -8,4 +8,4 @@ serve: npm-install
 	cd www && npm run start
 
 watch-build:
-	cargo watch -s 'make build'
+	cargo watch -w src/ -s 'make build'
