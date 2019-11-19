@@ -1,8 +1,14 @@
+extern crate html5ever;
 extern crate web_sys;
 
 mod utils;
 
+use html5ever::driver::ParseOpts;
+use html5ever::tendril::TendrilSink;
+use html5ever::tree_builder::TreeBuilderOpts;
+use html5ever::{parse_document, rcdom};
 use std::collections::HashMap;
+use std::default::Default;
 use std::io;
 use wasm_bindgen::prelude::*;
 use web_sys::Document;
@@ -76,6 +82,21 @@ impl Component for Root {
 // ************** Entrypoint **************
 #[wasm_bindgen]
 pub fn run() {
+    let opts = ParseOpts {
+        tree_builder: TreeBuilderOpts {
+            drop_doctype: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    let dom = parse_document(rcdom::RcDom::default(), opts)
+        .from_utf8()
+        .read_from(&mut "<p></p>".as_bytes())
+        .unwrap();
+
+    log!("Doc: {:#?}", dom.document);
+
     utils::set_panic_hook();
     let mut framework = Framework::new();
     framework.register_template("main", "<p>hello<p>".to_string());
