@@ -23,13 +23,13 @@ fn parse_html(input: &mut String) -> rcdom::RcDom {
 }
 
 #[derive(Debug)]
-pub enum Attribute {
+pub enum VAttribute {
     Static(String),
     Dynamic(String),
     Handler(String),
 }
 
-impl Attribute {
+impl VAttribute {
     pub fn is_handler(&self) -> bool {
         match self {
             Self::Handler(_) => true,
@@ -50,20 +50,25 @@ impl Attribute {
     }
 }
 
-type Attributes = HashMap<String, Attribute>;
+type VAttributes = HashMap<String, VAttribute>;
 
-pub enum NodeData {
-    Element { tag: String, attributes: Attributes },
-    Text { content: String },
+pub enum VNodeData {
+    Element {
+        tag: String,
+        attributes: VAttributes,
+    },
+    Text {
+        content: String,
+    },
 }
 
-pub struct Node {
-    pub data: NodeData,
-    pub children: Vec<Node>,
+pub struct VNode {
+    pub data: VNodeData,
+    pub children: Vec<VNode>,
 }
 
-fn extract_attribute(attr: &html5ever::Attribute) -> (String, Attribute) {
-    use Attribute::*;
+fn extract_attribute(attr: &html5ever::Attribute) -> (String, VAttribute) {
+    use VAttribute::*;
     let k = attr.name.local.to_string();
     let v = attr.value.to_string();
 
@@ -74,11 +79,11 @@ fn extract_attribute(attr: &html5ever::Attribute) -> (String, Attribute) {
     }
 }
 
-fn extract_attributes(attributes: Ref<'_, Vec<html5ever::Attribute>>) -> Attributes {
+fn extract_attributes(attributes: Ref<'_, Vec<html5ever::Attribute>>) -> VAttributes {
     attributes.iter().map(extract_attribute).collect()
 }
 
-fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<Node> {
+fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<VNode> {
     let mut res = Vec::new();
 
     for child in children.iter() {
@@ -90,27 +95,27 @@ fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<Node> {
             {
                 res = extract_children(child.children.borrow())
             }
-            rcdom::NodeData::Element { name, attrs, .. } => res.push(Node {
-                data: NodeData::Element {
+            rcdom::NodeData::Element { name, attrs, .. } => res.push(VNode {
+                data: VNodeData::Element {
                     attributes: extract_attributes(attrs.borrow()),
                     tag: name.local.to_string(),
                 },
                 children: extract_children(child.children.borrow()),
             }),
-            rcdom::NodeData::Text { contents } => res.push(Node {
-                data: NodeData::Text {
+            rcdom::NodeData::Text { contents } => res.push(VNode {
+                data: VNodeData::Text {
                     content: contents.borrow().to_string(),
                 },
                 children: extract_children(child.children.borrow()),
             }),
-            _ => panic!("Unhandled NodeData type"),
+            _ => panic!("Unhandled VNodeData type"),
         }
     }
 
     res
 }
 
-pub fn extract_html(input: &mut String) -> Vec<Node> {
+pub fn extract_html(input: &mut String) -> Vec<VNode> {
     let dom = parse_html(input);
 
     extract_children(dom.document.children.borrow())
@@ -120,7 +125,7 @@ pub fn extract_html(input: &mut String) -> Vec<Node> {
 mod tests {
     use super::*;
 
-    impl NodeData {
+    impl VNodeData {
         //{{{
         fn tag(&self) -> Option<&String> {
             match self {
@@ -129,7 +134,7 @@ mod tests {
             }
         }
 
-        fn attributes(&self) -> Option<&Attributes> {
+        fn attributes(&self) -> Option<&VAttributes> {
             match self {
                 Self::Element { attributes, .. } => Some(attributes),
                 _ => None,
@@ -150,7 +155,7 @@ mod tests {
         let html_data = &dom.document.children.borrow()[0].data;
         match html_data {
             rcdom::NodeData::Element { name, .. } => assert_eq!(name.local.to_string(), "html"),
-            _ => panic!("Incorrect NodeData type!"),
+            _ => panic!("Incorrect VNodeData type!"),
         }
     }
 
