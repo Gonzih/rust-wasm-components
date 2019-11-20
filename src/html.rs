@@ -2,10 +2,11 @@ use html5ever::driver::ParseOpts;
 use html5ever::tendril::TendrilSink;
 use html5ever::tree_builder::TreeBuilderOpts;
 use html5ever::{parse_document, rcdom};
-use std::cell::{Ref, RefCell};
-use std::collections::HashMap;
+use std::cell::Ref;
 use std::default::Default;
 use std::rc::Rc;
+
+use crate::vdom::*;
 
 fn parse_html(input: &mut String) -> rcdom::RcDom {
     let opts = ParseOpts {
@@ -20,51 +21,6 @@ fn parse_html(input: &mut String) -> rcdom::RcDom {
         .from_utf8()
         .read_from(&mut input.as_bytes())
         .expect("could not parse html input")
-}
-
-#[derive(Debug)]
-pub enum VAttribute {
-    Static(String),
-    Dynamic(String),
-    Handler(String),
-}
-
-impl VAttribute {
-    pub fn is_handler(&self) -> bool {
-        match self {
-            Self::Handler(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_attribute(&self) -> bool {
-        !self.is_handler()
-    }
-
-    pub fn value(&self) -> &String {
-        match self {
-            Self::Static(value) => value,
-            Self::Dynamic(value) => value,
-            Self::Handler(value) => value,
-        }
-    }
-}
-
-type VAttributes = HashMap<String, VAttribute>;
-
-pub enum VNodeData {
-    Element {
-        tag: String,
-        attributes: VAttributes,
-    },
-    Text {
-        content: String,
-    },
-}
-
-pub struct VNode {
-    pub data: VNodeData,
-    pub children: Vec<VNode>,
 }
 
 fn extract_attribute(attr: &html5ever::Attribute) -> (String, VAttribute) {
