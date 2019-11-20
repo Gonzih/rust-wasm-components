@@ -121,6 +121,7 @@ mod tests {
     use super::*;
 
     impl NodeData {
+        //{{{
         fn tag(&self) -> Option<&String> {
             match self {
                 Self::Element { tag, .. } => Some(tag),
@@ -141,7 +142,7 @@ mod tests {
                 _ => None,
             }
         }
-    }
+    } //}}}
 
     #[test]
     fn parse_html_basic() {
