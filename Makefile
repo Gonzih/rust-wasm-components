@@ -27,3 +27,9 @@ watch-web-test:
 
 dev-env:
 	$(MAKE) -j 3 watch-build watch-test serve
+
+setup:
+	rustup default nightly
+
+ci:
+	nix-shell shell.nix --run 'make setup test'
