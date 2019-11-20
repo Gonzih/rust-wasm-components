@@ -64,8 +64,8 @@ fn extract_attribute(attr: &html5ever::Attribute) -> (String, Attribute) {
     let v = attr.value.to_string();
 
     match k.chars().next() {
-        Some(':') => (k.replacen(":", "", 1), Dynamic(v)),
-        Some('@') => (k.replacen("@", "", 1), Handler(v)),
+        Some(':') => (k.replacen(':', "", 1), Dynamic(v)),
+        Some('@') => (k.replacen('@', "", 1), Handler(v)),
         _ => (k, Static(v)),
     }
 }
