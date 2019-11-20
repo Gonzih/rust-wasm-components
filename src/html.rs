@@ -71,7 +71,6 @@ fn extract_attribute(attr: &html5ever::Attribute) -> (String, Attribute) {
 }
 
 fn extract_attributes(attributes: Ref<'_, Vec<html5ever::Attribute>>) -> Attributes {
-    println!("{:?}", attributes);
     attributes.iter().map(extract_attribute).collect()
 }
 
