@@ -52,10 +52,14 @@ impl Attribute {
 
 type Attributes = HashMap<String, Attribute>;
 
+pub enum NodeData {
+    Element { tag: String, attributes: Attributes },
+    Text { content: String },
+}
+
 pub struct Node {
-    pub tag: String,
+    pub data: NodeData,
     pub children: Vec<Node>,
-    pub attributes: Attributes,
 }
 
 fn extract_attribute(attr: &html5ever::Attribute) -> (String, Attribute) {
@@ -87,8 +91,16 @@ fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<Node> {
                 res = extract_children(child.children.borrow())
             }
             rcdom::NodeData::Element { name, attrs, .. } => res.push(Node {
-                attributes: extract_attributes(attrs.borrow()),
-                tag: name.local.to_string(),
+                data: NodeData::Element {
+                    attributes: extract_attributes(attrs.borrow()),
+                    tag: name.local.to_string(),
+                },
+                children: extract_children(child.children.borrow()),
+            }),
+            rcdom::NodeData::Text { contents } => res.push(Node {
+                data: NodeData::Text {
+                    content: contents.borrow().to_string(),
+                },
                 children: extract_children(child.children.borrow()),
             }),
             _ => panic!("Unhandled NodeData type"),
@@ -108,6 +120,29 @@ pub fn extract_html(input: &mut String) -> Vec<Node> {
 mod tests {
     use super::*;
 
+    impl NodeData {
+        fn tag(&self) -> Option<&String> {
+            match self {
+                Self::Element { tag, .. } => Some(tag),
+                _ => None,
+            }
+        }
+
+        fn attributes(&self) -> Option<&Attributes> {
+            match self {
+                Self::Element { attributes, .. } => Some(attributes),
+                _ => None,
+            }
+        }
+
+        fn content(&self) -> Option<&String> {
+            match self {
+                Self::Text { content } => Some(content),
+                _ => None,
+            }
+        }
+    }
+
     #[test]
     fn parse_html_basic() {
         let dom = parse_html(&mut "<p></p>".to_string());
@@ -122,36 +157,47 @@ mod tests {
     fn extract_html_basic() {
         let dom = extract_html(&mut "<p></p>".to_string());
         assert_eq!(dom.len(), 1);
-        assert_eq!(dom[0].tag, "p".to_string());
+        assert_eq!(dom[0].data.tag().unwrap(), &"p");
     }
 
     #[test]
     fn extract_html_basic_nested() {
         let dom = extract_html(&mut "<div><p></p></div>".to_string());
         assert_eq!(dom.len(), 1);
-        assert_eq!(dom[0].tag, "div".to_string());
+        assert_eq!(dom[0].data.tag().unwrap(), &"div");
         assert_eq!(dom[0].children.len(), 1);
-        assert_eq!(dom[0].children[0].tag, "p".to_string());
+        assert_eq!(dom[0].children[0].data.tag().unwrap(), &"p");
     }
 
     #[test]
     fn extract_html_static_attribute() {
         let dom = extract_html(&mut "<p class=\"hello\"></p>".to_string());
         assert_eq!(dom.len(), 1);
-        assert_eq!(dom[0].attributes["class"].value(), &"hello".to_string());
+        assert_eq!(dom[0].data.attributes().unwrap()["class"].value(), &"hello");
     }
 
     #[test]
     fn extract_html_dynamic_attribute() {
         let dom = extract_html(&mut "<p :class=\"hello\"></p>".to_string());
         assert_eq!(dom.len(), 1);
-        assert_eq!(dom[0].attributes["class"].value(), &"hello".to_string());
+        assert_eq!(dom[0].data.attributes().unwrap()["class"].value(), &"hello");
     }
 
     #[test]
     fn extract_html_handler_attribute() {
         let dom = extract_html(&mut "<p @click=\"on-click\"></p>".to_string());
         assert_eq!(dom.len(), 1);
-        assert_eq!(dom[0].attributes["click"].value(), &"on-click".to_string());
+        assert_eq!(
+            dom[0].data.attributes().unwrap()["click"].value(),
+            &"on-click"
+        );
+    }
+
+    #[test]
+    fn extract_html_text_node() {
+        let dom = extract_html(&mut "<p>im a text</p>".to_string());
+        assert_eq!(dom.len(), 1);
+        assert_eq!(dom[0].children.len(), 1);
+        assert_eq!(dom[0].children[0].data.content().unwrap(), &"im a text");
     }
 }
