@@ -5,5 +5,5 @@ jobs:
       - image: nixos/nix
     steps:
       - checkout
-      - run: nix-env -i gnumake
+      - run: nix-env -i gnumake rustup
       - run: make ci
