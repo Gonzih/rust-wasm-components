@@ -52,10 +52,10 @@ impl Attribute {
 
 type Attributes = HashMap<String, Attribute>;
 
-struct Node {
+pub struct Node {
     pub tag: String,
     pub children: Vec<Node>,
-    attributes: Attributes,
+    pub attributes: Attributes,
 }
 
 fn extract_attribute(attr: &html5ever::Attribute) -> (String, Attribute) {
@@ -98,7 +98,7 @@ fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<Node> {
     res
 }
 
-fn extract_html(input: &mut String) -> Vec<Node> {
+pub fn extract_html(input: &mut String) -> Vec<Node> {
     let dom = parse_html(input);
 
     extract_children(dom.document.children.borrow())
