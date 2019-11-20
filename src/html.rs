@@ -126,6 +126,15 @@ mod tests {
     }
 
     #[test]
+    fn extract_html_basic_nested() {
+        let dom = extract_html(&mut "<div><p></p></div>".to_string());
+        assert_eq!(dom.len(), 1);
+        assert_eq!(dom[0].tag, "div".to_string());
+        assert_eq!(dom[0].children.len(), 1);
+        assert_eq!(dom[0].children[0].tag, "p".to_string());
+    }
+
+    #[test]
     fn extract_html_static_attribute() {
         let dom = extract_html(&mut "<p class=\"hello\"></p>".to_string());
         assert_eq!(dom.len(), 1);
