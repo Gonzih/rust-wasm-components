@@ -87,26 +87,28 @@ fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<VNode> {
     let mut res = Vec::new();
 
     for child in children.iter() {
+        let children = extract_children(child.children.borrow());
+
         match &child.data {
             rcdom::NodeData::Element { name, .. }
                 if name.local.to_string() == "html"
                     || name.local.to_string() == "head"
                     || name.local.to_string() == "body" =>
             {
-                res = extract_children(child.children.borrow())
+                res = children;
             }
             rcdom::NodeData::Element { name, attrs, .. } => res.push(VNode {
                 data: VNodeData::Element {
                     attributes: extract_attributes(attrs.borrow()),
                     tag: name.local.to_string(),
                 },
-                children: extract_children(child.children.borrow()),
+                children,
             }),
             rcdom::NodeData::Text { contents } => res.push(VNode {
                 data: VNodeData::Text {
                     content: contents.borrow().to_string(),
                 },
-                children: extract_children(child.children.borrow()),
+                children,
             }),
             _ => panic!("Unhandled VNodeData type"),
         }
