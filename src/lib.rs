@@ -1,14 +1,7 @@
 extern crate html5ever;
 extern crate web_sys;
 
-mod utils;
-
-use html5ever::driver::ParseOpts;
-use html5ever::tendril::TendrilSink;
-use html5ever::tree_builder::TreeBuilderOpts;
-use html5ever::{parse_document, rcdom};
 use std::collections::HashMap;
-use std::default::Default;
 use std::io;
 use wasm_bindgen::prelude::*;
 
@@ -17,6 +10,9 @@ macro_rules! log {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
 }
+
+mod html;
+mod utils;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -115,29 +111,10 @@ impl Component for Root {
     }
 }
 
-fn test_html_parser() {
-    let opts = ParseOpts {
-        tree_builder: TreeBuilderOpts {
-            drop_doctype: true,
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-
-    let dom = parse_document(rcdom::RcDom::default(), opts)
-        .from_utf8()
-        .read_from(&mut "<p></p>".as_bytes())
-        .unwrap();
-
-    log!("Doc: {:#?}", dom.document);
-}
-
 // ************** Entrypoint **************
 #[wasm_bindgen]
 pub fn run() {
     utils::set_panic_hook();
-
-    test_html_parser();
 
     let mut framework = Framework::new();
     framework.register_template("main", "<p>hello from root<p>".to_string());
