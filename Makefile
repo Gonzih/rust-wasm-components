@@ -31,4 +31,5 @@ dev-env:
 setup:
 	rustup default nightly
 
-ci: setup test
+ci:
+	nix-shell shell.nix --run 'make setup test'
