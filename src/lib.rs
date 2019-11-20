@@ -24,12 +24,13 @@ macro_rules! log {
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-type ComponentConstructor = Box<dyn Fn() -> Box<dyn Component>>;
+type ComponentConstructor = Box<dyn Fn(String) -> Box<dyn Component>>;
 
 // ************** Framework structure **************
 struct Framework {
     templates: HashMap<&'static str, String>,
     components: HashMap<&'static str, ComponentConstructor>,
+    component_templates: HashMap<&'static str, &'static str>,
 }
 
 impl Framework {
@@ -37,6 +38,7 @@ impl Framework {
         Framework {
             templates: HashMap::new(),
             components: HashMap::new(),
+            component_templates: HashMap::new(),
         }
     }
 
@@ -48,15 +50,43 @@ impl Framework {
         self.components.insert(name, constructor);
     }
 
-    fn mount(&mut self, target_id: &'static str, root_component: &'static str) -> io::Result<()> {
-        log!("Mounting {} into #{}", root_component, target_id);
+    fn register_component_template_mapping(
+        &mut self,
+        component: &'static str,
+        template: &'static str,
+    ) {
+        self.component_templates.insert(component, template);
+    }
+
+    fn instantiate(&self, component: &'static str) -> Box<dyn Component> {
+        let constructor = self
+            .components
+            .get(component)
+            .expect(&*format!("Unknown component {}", component));
+        let template_name = self
+            .component_templates
+            .get(component)
+            .expect(&*format!("Could not find template for {}", component));
+        let template = self.templates.get(template_name).expect(&*format!(
+            "Could not find template {} for component {}",
+            template_name, component
+        ));
+
+        constructor(template.clone())
+    }
+
+    fn mount(&mut self, target_id: &'static str, component: &'static str) -> io::Result<()> {
+        log!("Mounting {} into #{}", component, target_id);
+
+        let cmp = self.instantiate(component);
+
         web_sys::window()
-            .expect("could not get window")
+            .expect("could not get js/window")
             .document()
             .expect("could not get js/document instance")
             .get_element_by_id(target_id)
             .expect(&*format!("could not find target element {}", target_id))
-            .set_inner_html("MOUNTED!");
+            .set_inner_html(&*cmp.render());
 
         Ok(())
     }
@@ -64,20 +94,25 @@ impl Framework {
 
 // ************** Trait that enforces component specific methods **************
 trait Component {
-    fn doathing(&self);
+    fn render(&self) -> String;
 }
 
 // ************** Sample component **************
-struct Root {}
+struct Root {
+    template: String,
+}
 
 impl Root {
-    fn new() -> Self {
-        Root {}
+    fn new(template: String) -> Self {
+        Root { template }
     }
 }
 
+// can be macro generated
 impl Component for Root {
-    fn doathing(&self) {}
+    fn render(&self) -> String {
+        self.template.clone()
+    }
 }
 
 fn test_html_parser() {
@@ -105,8 +140,9 @@ pub fn run() {
     test_html_parser();
 
     let mut framework = Framework::new();
-    framework.register_template("main", "<p>hello<p>".to_string());
-    framework.register_component("root", Box::new(|| Box::new(Root::new())));
+    framework.register_template("main", "<p>hello from root<p>".to_string());
+    framework.register_component("root", Box::new(|tmpl| Box::new(Root::new(tmpl))));
+    framework.register_component_template_mapping("root", "main");
     framework
         .mount("main-container", "root")
         .expect("could not mount component");
