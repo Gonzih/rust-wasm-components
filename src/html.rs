@@ -3,6 +3,7 @@ use html5ever::tendril::TendrilSink;
 use html5ever::tree_builder::TreeBuilderOpts;
 use html5ever::{parse_document, rcdom};
 use std::cell::{Ref, RefCell};
+use std::collections::HashMap;
 use std::default::Default;
 use std::rc::Rc;
 
@@ -21,9 +22,57 @@ fn parse_html(input: &mut String) -> rcdom::RcDom {
         .expect("could not parse html input")
 }
 
+#[derive(Debug)]
+pub enum Attribute {
+    Static(String),
+    Dynamic(String),
+    Handler(String),
+}
+
+impl Attribute {
+    pub fn is_handler(&self) -> bool {
+        match self {
+            Self::Handler(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_attribute(&self) -> bool {
+        !self.is_handler()
+    }
+
+    pub fn value(&self) -> &String {
+        match self {
+            Self::Static(value) => value,
+            Self::Dynamic(value) => value,
+            Self::Handler(value) => value,
+        }
+    }
+}
+
+type Attributes = HashMap<String, Attribute>;
+
 struct Node {
-    tag: String,
-    children: Vec<Node>,
+    pub tag: String,
+    pub children: Vec<Node>,
+    attributes: Attributes,
+}
+
+fn extract_attribute(attr: &html5ever::Attribute) -> (String, Attribute) {
+    use Attribute::*;
+    let k = attr.name.local.to_string();
+    let v = attr.value.to_string();
+
+    match k.chars().next() {
+        Some(':') => (k.replacen(":", "", 1), Dynamic(v)),
+        Some('@') => (k.replacen("@", "", 1), Handler(v)),
+        _ => (k, Static(v)),
+    }
+}
+
+fn extract_attributes(attributes: Ref<'_, Vec<html5ever::Attribute>>) -> Attributes {
+    println!("{:?}", attributes);
+    attributes.iter().map(extract_attribute).collect()
 }
 
 fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<Node> {
@@ -38,7 +87,8 @@ fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<Node> {
             {
                 res = extract_children(child.children.borrow())
             }
-            rcdom::NodeData::Element { name, .. } => res.push(Node {
+            rcdom::NodeData::Element { name, attrs, .. } => res.push(Node {
+                attributes: extract_attributes(attrs.borrow()),
                 tag: name.local.to_string(),
                 children: extract_children(child.children.borrow()),
             }),
@@ -74,5 +124,26 @@ mod tests {
         let dom = extract_html(&mut "<p></p>".to_string());
         assert_eq!(dom.len(), 1);
         assert_eq!(dom[0].tag, "p".to_string());
+    }
+
+    #[test]
+    fn extract_html_static_attribute() {
+        let dom = extract_html(&mut "<p class=\"hello\"></p>".to_string());
+        assert_eq!(dom.len(), 1);
+        assert_eq!(dom[0].attributes["class"].value(), &"hello".to_string());
+    }
+
+    #[test]
+    fn extract_html_dynamic_attribute() {
+        let dom = extract_html(&mut "<p :class=\"hello\"></p>".to_string());
+        assert_eq!(dom.len(), 1);
+        assert_eq!(dom[0].attributes["class"].value(), &"hello".to_string());
+    }
+
+    #[test]
+    fn extract_html_handler_attribute() {
+        let dom = extract_html(&mut "<p @click=\"on-click\"></p>".to_string());
+        assert_eq!(dom.len(), 1);
+        assert_eq!(dom[0].attributes["click"].value(), &"on-click".to_string());
     }
 }
