@@ -1,13 +1,15 @@
+/// This package represents intermidiate not evaluated dom tree
+/// that should be stored within a component as a templating language
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub enum VAttribute {
+pub enum Attribute {
     Static(String),
     Dynamic(String),
     Handler(String),
 }
 
-impl VAttribute {
+impl Attribute {
     pub fn is_handler(&self) -> bool {
         match self {
             Self::Handler(_) => true,
@@ -28,19 +30,14 @@ impl VAttribute {
     }
 }
 
-pub type VAttributes = HashMap<String, VAttribute>;
+pub type Attributes = HashMap<String, Attribute>;
 
-pub enum VNodeData {
-    Element {
-        tag: String,
-        attributes: VAttributes,
-    },
-    Text {
-        content: String,
-    },
+pub enum NodeData {
+    Element { tag: String, attributes: Attributes },
+    Text { content: String },
 }
 
-pub struct VNode {
-    pub data: VNodeData,
-    pub children: Vec<VNode>,
+pub struct Node {
+    pub data: NodeData,
+    pub children: Vec<Node>,
 }
