@@ -47,7 +47,7 @@ pub fn run() {
     utils::set_panic_hook();
 
     let mut framework = Framework::new();
-    framework.register_template("main", "<p>hello from root<p>".to_string());
+    framework.register_template("main", "main");
     framework.register_component("root", Box::new(|tmpl| Box::new(Root::new(tmpl))));
     framework.register_component_template_mapping("root", "main");
     framework

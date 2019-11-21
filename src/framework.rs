@@ -16,6 +16,16 @@ pub struct Framework {
     component_templates: HashMap<&'static str, &'static str>,
 }
 
+fn load_template_data(id: &'static str) -> String {
+    web_sys::window()
+        .expect("could not get js/window")
+        .document()
+        .expect("could not get js/document instance")
+        .get_element_by_id(id)
+        .expect(&*format!("could not find target element {}", id))
+        .inner_html()
+}
+
 impl Framework {
     pub fn new() -> Self {
         Framework {
@@ -25,8 +35,9 @@ impl Framework {
         }
     }
 
-    pub fn register_template(&mut self, name: &'static str, mut template: String) {
-        self.templates.insert(name, extract_html(&mut template));
+    pub fn register_template(&mut self, name: &'static str, id: &'static str) {
+        self.templates
+            .insert(name, extract_html(&mut load_template_data(id)));
     }
 
     pub fn register_component(&mut self, name: &'static str, constructor: ComponentConstructor) {
