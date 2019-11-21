@@ -6,7 +6,7 @@ use std::cell::Ref;
 use std::default::Default;
 use std::rc::Rc;
 
-use crate::templating::*;
+pub use crate::templating::*;
 
 fn parse_html(input: &mut String) -> rcdom::RcDom {
     let opts = ParseOpts {
@@ -39,7 +39,7 @@ fn extract_attributes(attributes: Ref<'_, Vec<html5ever::Attribute>>) -> Attribu
     attributes.iter().map(extract_attribute).collect()
 }
 
-fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<Node> {
+fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Template {
     let mut res = Vec::new();
 
     for child in children.iter() {
@@ -73,7 +73,7 @@ fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Vec<Node> {
     res
 }
 
-pub fn extract_html(input: &mut String) -> Vec<Node> {
+pub fn extract_html(input: &mut String) -> Template {
     let dom = parse_html(input);
 
     extract_children(dom.document.children.borrow())

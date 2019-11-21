@@ -2,7 +2,7 @@
 /// that should be stored within a component as a templating language
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Attribute {
     Static(String),
     Dynamic(String),
@@ -32,12 +32,16 @@ impl Attribute {
 
 pub type Attributes = HashMap<String, Attribute>;
 
+#[derive(Debug, Clone)]
 pub enum NodeData {
     Element { tag: String, attributes: Attributes },
     Text { content: String },
 }
 
+#[derive(Debug, Clone)]
 pub struct Node {
     pub data: NodeData,
     pub children: Vec<Node>,
 }
+
+pub type Template = Vec<Node>;
