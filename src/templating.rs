@@ -44,8 +44,14 @@ pub struct Node {
     pub children: Vec<Node>,
 }
 
+#[derive(Debug, Clone)]
+pub struct VNode {
+    pub data: NodeData,
+    pub children: Vec<VNode>,
+}
+
 impl Node {
-    pub fn realize(&self) -> Node {
+    pub fn realize(&self) -> VNode {
         let data = match &self.data {
             txt @ NodeData::Text { .. } => txt.clone(),
             NodeData::Element { tag, attributes } => NodeData::Element {
@@ -66,7 +72,7 @@ impl Node {
 
         let children = self.children.iter().map(|ch| ch.realize()).collect();
 
-        Node { data, children }
+        VNode { data, children }
     }
 }
 
