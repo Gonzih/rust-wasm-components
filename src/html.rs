@@ -113,7 +113,7 @@ mod tests {
         let html_data = &dom.document.children.borrow()[0].data;
         match html_data {
             rcdom::NodeData::Element { name, .. } => assert_eq!(name.local.to_string(), "html"),
-            _ => panic!("Incorrect VNodeData type!"),
+            _ => panic!("Incorrect NodeData type!"),
         }
     }
 
