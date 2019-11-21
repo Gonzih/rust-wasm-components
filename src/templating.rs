@@ -44,4 +44,30 @@ pub struct Node {
     pub children: Vec<Node>,
 }
 
+impl Node {
+    pub fn realize(&self) -> Node {
+        let data = match &self.data {
+            txt @ NodeData::Text { .. } => txt.clone(),
+            NodeData::Element { tag, attributes } => NodeData::Element {
+                tag: tag.clone(),
+                attributes: attributes
+                    .iter()
+                    .map(|(k, v)| {
+                        let newv = match v {
+                            Attribute::Dynamic(value) => Attribute::Static(value.clone()),
+                            attr @ _ => attr.clone(),
+                        };
+
+                        (k.clone(), newv)
+                    })
+                    .collect(),
+            },
+        };
+
+        let children = self.children.iter().map(|ch| ch.realize()).collect();
+
+        Node { data, children }
+    }
+}
+
 pub type Template = Vec<Node>;

@@ -37,7 +37,13 @@ impl Root {
 // can be macro generated
 impl Component for Root {
     fn render(&self) -> String {
-        format!("{:?}", self.template)
+        format!(
+            "{:?}",
+            self.template
+                .iter()
+                .map(|node| node.realize())
+                .collect::<Vec<_>>()
+        )
     }
 }
 
