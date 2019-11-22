@@ -3,6 +3,8 @@
 use std::collections::HashMap;
 use std::ops::Deref;
 
+use crate::framework::Lookups;
+
 #[derive(Debug, Clone)]
 pub enum Attribute {
     Static(String),
@@ -80,12 +82,21 @@ impl VNode {
 
                 DomNode::Text(txt)
             }
-            NodeData::Element { tag, .. } => {
+            NodeData::Element { tag, attributes } => {
                 let children: Vec<_> = self.children.iter().map(|c| c.render()).collect();
 
                 let element = document
                     .create_element(tag)
                     .expect("could not create dom element");
+
+                for (name, attribute) in attributes {
+                    match attribute {
+                        Attribute::Static(value) => element
+                            .set_attribute(name, value)
+                            .expect("could not set attribute"),
+                        _ => (),
+                    }
+                }
 
                 for child in children {
                     element
@@ -100,7 +111,7 @@ impl VNode {
 }
 
 impl Node {
-    pub fn realize(&self) -> VNode {
+    pub fn realize(&self, lookups: &Lookups) -> VNode {
         let data = match &self.data {
             txt @ NodeData::Text { .. } => txt.clone(),
             NodeData::Element { tag, attributes } => NodeData::Element {
@@ -108,10 +119,18 @@ impl Node {
                 attributes: attributes
                     .iter()
                     .map(|(k, v)| {
-                        let newv = match v {
-                            Attribute::Dynamic(value) => Attribute::Static(value.clone()),
-                            attr @ _ => attr.clone(),
-                        };
+                        let newv =
+                            match v {
+                                Attribute::Dynamic(value) => {
+                                    let v = (lookups.borrow().get::<str>(&*value).expect(
+                                        &*format!("could not find lookup fn for {}", value),
+                                    ))()
+                                    .to_string();
+
+                                    Attribute::Static(v)
+                                }
+                                attr @ _ => attr.clone(),
+                            };
 
                         (k.clone(), newv)
                     })
@@ -119,7 +138,7 @@ impl Node {
             },
         };
 
-        let children = self.children.iter().map(|ch| ch.realize()).collect();
+        let children = self.children.iter().map(|ch| ch.realize(lookups)).collect();
 
         VNode { data, children }
     }
