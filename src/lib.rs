@@ -1,6 +1,7 @@
 extern crate html5ever;
 extern crate web_sys;
 
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 macro_rules! log {
@@ -16,6 +17,7 @@ mod utils;
 
 use framework::*;
 use html::Template;
+use templating::DomNode;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -28,22 +30,19 @@ struct Root {
     template: Template,
 }
 
-impl Root {
-    fn new(template: Template) -> Self {
-        Root { template }
-    }
+impl Root {}
+
+struct ComponentWrapper {
+    pub component: Box<Rc<dyn Component>>,
 }
 
 // can be macro generated
 impl Component for Root {
-    fn render(&self) -> String {
-        format!(
-            "{:?}",
-            self.template
-                .iter()
-                .map(|node| node.realize())
-                .collect::<Vec<_>>()
-        )
+    fn render(&self) -> Vec<DomNode> {
+        self.template
+            .iter()
+            .map(|node| node.realize().render())
+            .collect()
     }
 }
 
@@ -54,7 +53,7 @@ pub fn run() {
 
     let mut framework = Framework::new();
     framework.register_template("main", "main");
-    framework.register_component("root", Box::new(|tmpl| Box::new(Root::new(tmpl))));
+    framework.register_component("root", Box::new(|tmpl| Box::new(Root { template: tmpl })));
     framework.register_component_template_mapping("root", "main");
     framework
         .mount("main-container", "root")

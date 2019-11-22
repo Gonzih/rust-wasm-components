@@ -34,6 +34,8 @@ features = [
   'Window',
   'Document',
   'Element',
+  'Text',
+  'Node',
 ]
 
 [dev-dependencies]

@@ -1,4 +1,5 @@
 use crate::html::*;
+use crate::templating::*;
 use std::collections::HashMap;
 use std::io;
 
@@ -6,7 +7,7 @@ type ComponentConstructor = Box<dyn Fn(Template) -> Box<dyn Component>>;
 
 // ************** Trait that enforces component specific methods **************
 pub trait Component {
-    fn render(&self) -> String;
+    fn render(&self) -> Vec<DomNode>;
 }
 
 // ************** Framework structure **************
@@ -74,13 +75,23 @@ impl Framework {
 
         let cmp = self.instantiate(component);
 
-        web_sys::window()
+        let target = web_sys::window()
             .expect("could not get js/window")
             .document()
             .expect("could not get js/document instance")
             .get_element_by_id(target_id)
-            .expect(&*format!("could not find target element {}", target_id))
-            .set_inner_html(&*cmp.render());
+            .expect(&*format!("could not find target element {}", target_id));
+
+        // clear element
+        target.set_inner_html("");
+
+        let elements = &*cmp.render();
+
+        for element in elements {
+            target
+                .append_child(element)
+                .expect("colud not append child");
+        }
 
         Ok(())
     }

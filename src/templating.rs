@@ -1,6 +1,7 @@
 /// This package represents intermidiate not evaluated dom tree
 /// that should be stored within a component as a templating language
 use std::collections::HashMap;
+use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub enum Attribute {
@@ -44,10 +45,58 @@ pub struct Node {
     pub children: Vec<Node>,
 }
 
+pub enum DomNode {
+    Text(web_sys::Text),
+    Element(web_sys::Element),
+}
+
+impl Deref for DomNode {
+    type Target = web_sys::Node;
+
+    fn deref(&self) -> &web_sys::Node {
+        match self {
+            DomNode::Text(txt) => txt.as_ref(),
+            DomNode::Element(el) => el.as_ref(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct VNode {
     pub data: NodeData,
     pub children: Vec<VNode>,
+}
+
+impl VNode {
+    pub fn render(&self) -> DomNode {
+        let document = web_sys::window()
+            .expect("could not get js/window")
+            .document()
+            .expect("could not get js/document instance");
+
+        match &self.data {
+            NodeData::Text { content } => {
+                let txt = document.create_text_node(&content.clone());
+
+                DomNode::Text(txt)
+            }
+            NodeData::Element { tag, .. } => {
+                let children: Vec<_> = self.children.iter().map(|c| c.render()).collect();
+
+                let element = document
+                    .create_element(tag)
+                    .expect("could not create dom element");
+
+                for child in children {
+                    element
+                        .append_child(&*child)
+                        .expect("could not insert a child");
+                }
+
+                DomNode::Element(element)
+            }
+        }
+    }
 }
 
 impl Node {
