@@ -1,6 +1,9 @@
 extern crate html5ever;
 extern crate web_sys;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use wasm_bindgen::prelude::*;
 
 macro_rules! log {
@@ -82,7 +85,7 @@ pub fn run() -> Framework {
 
     let mut framework = Framework::new();
 
-    let wrapper = ComponentWrapper::new(Box::new(|| Box::new(Root::new())));
+    let wrapper = ComponentWrapper::new(Box::new(|| Rc::new(RefCell::new(Root::new()))));
 
     framework.register_component_wrapper("root", wrapper, "main");
 

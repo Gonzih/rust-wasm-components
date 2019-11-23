@@ -1,13 +1,15 @@
 use crate::html::*;
 use crate::templating::*;
 use crate::vdom::{DomNode, VDom};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::io;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
-pub type ComponentInstance = Box<dyn Component>;
-type ComponentConstructor = Box<dyn Fn() -> ComponentInstance>;
+pub type ComponentInstance = Rc<RefCell<dyn Component>>;
+pub type ComponentConstructor = Box<dyn Fn() -> ComponentInstance>;
 
 // ************** Trait that enforces component specific methods **************
 pub type LookupValue = Box<dyn Display>;
@@ -32,7 +34,7 @@ impl ComponentRuntime {
         self.vdom = self
             .template
             .iter()
-            .map(|node| node.realize(&self.component))
+            .map(|node| node.realize(Rc::clone(&self.component)))
             .collect();
 
         self.vdom.iter().map(|vnode| vnode.to_dom()).collect()

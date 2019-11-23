@@ -4,6 +4,7 @@
 use crate::framework::ComponentInstance;
 use crate::vdom::*;
 use std::collections::HashMap;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -28,7 +29,7 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn realize(&self, component: &ComponentInstance) -> VNode {
+    pub fn realize(&self, component: ComponentInstance) -> VNode {
         let data = match &self.data {
             NodeData::Text { content } => VNodeData::Text {
                 content: content.clone(),
@@ -42,6 +43,7 @@ impl Node {
                             Attribute::Static(value) => VAttribute::Attribute(value.clone()),
                             Attribute::Dynamic(value) => {
                                 let v = component
+                                    .borrow()
                                     .lookup(value)
                                     .expect(&*format!(
                                         "could not find key {} in a component",
@@ -52,9 +54,21 @@ impl Node {
                                 VAttribute::Attribute(v)
                             }
                             Attribute::Handler(value) => {
+                                let component_instance = Rc::downgrade(&component);
                                 let message_value = value.clone();
                                 let closure = Closure::wrap(Box::new(move |e: web_sys::Event| {
-                                    log!("Got value {:?} and should send {}", e, message_value);
+                                    let cmp = component_instance.upgrade();
+
+                                    match cmp {
+                                        Some(cmp_rc) => {
+                                            cmp_rc.borrow_mut().handle(message_value.clone());
+                                        }
+                                        None => log!(
+                                            "Could not get instance of commponent, might be freed"
+                                        ),
+                                    };
+
+                                    log!("Got value {:?} and did send {}", e, message_value);
                                 })
                                     as Box<dyn FnMut(_)>);
 
@@ -71,7 +85,7 @@ impl Node {
         let children = self
             .children
             .iter()
-            .map(|ch| ch.realize(component))
+            .map(|ch| ch.realize(Rc::clone(&component)))
             .collect();
 
         VNode { data, children }
