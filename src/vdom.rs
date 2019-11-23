@@ -77,7 +77,6 @@ impl VNode {
                                 )
                                 .expect("colud not add event listener");
                         }
-                        _ => (),
                     }
                 }
 
