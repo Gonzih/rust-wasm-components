@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 use crate::framework::ComponentInstance;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 
 #[derive(Debug, Clone)]
 pub enum Attribute {
@@ -94,6 +96,22 @@ impl VNode {
                         Attribute::Static(value) => element
                             .set_attribute(name, value)
                             .expect("could not set attribute"),
+                        Attribute::Handler(value) => {
+                            let message_value = value.clone();
+                            let closure = Closure::wrap(Box::new(move |e: web_sys::Event| {
+                                log!("Got value {:?} and should send {}", e, message_value);
+                            })
+                                as Box<dyn FnMut(_)>);
+                            element
+                                .add_event_listener_with_callback(
+                                    name,
+                                    closure.as_ref().unchecked_ref(),
+                                )
+                                .expect("colud not add event listener");
+
+                            // TODO fix this memory leak!
+                            closure.forget();
+                        }
                         _ => (),
                     }
                 }

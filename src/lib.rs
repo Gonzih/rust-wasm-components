@@ -34,10 +34,34 @@ impl Root {
     }
 }
 
+enum Msg {
+    Increment,
+}
+
+impl Msg {
+    fn from_str(message: String) -> Self {
+        match message.as_ref() {
+            "increment" => Self::Increment,
+            _ => panic!(format!("Unknown message type {}!", message)),
+        }
+    }
+}
+
 // can be macro generated
 impl Component for Root {
     fn render(&self) -> Vec<DomNode> {
         vec![]
+    }
+
+    fn handle(&mut self, message: String) -> bool {
+        let msg = Msg::from_str(message);
+
+        match msg {
+            Msg::Increment => {
+                self.count += 1;
+                true
+            }
+        }
     }
 }
 

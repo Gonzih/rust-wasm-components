@@ -16,6 +16,7 @@ pub trait Lookup {
 
 pub trait Component: Lookup {
     fn render(&self) -> Vec<DomNode>;
+    fn handle(&mut self, message: String) -> bool;
 }
 
 pub struct ComponentRuntime {

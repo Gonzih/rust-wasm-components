@@ -36,6 +36,8 @@ features = [
   'Element',
   'Text',
   'Node',
+  'Event',
+  'EventTarget',
 ]
 
 [dev-dependencies]
