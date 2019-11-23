@@ -107,6 +107,28 @@ mod tests {
         }
     } //}}}
 
+    impl Attribute {
+        //{{{
+        pub fn is_handler(&self) -> bool {
+            match self {
+                Self::Handler(_) => true,
+                _ => false,
+            }
+        }
+
+        pub fn is_attribute(&self) -> bool {
+            !self.is_handler()
+        }
+
+        pub fn value(&self) -> &String {
+            match self {
+                Self::Static(value) => value,
+                Self::Dynamic(value) => value,
+                Self::Handler(value) => value,
+            }
+        }
+    } //}}}
+
     #[test]
     fn parse_html_basic() {
         let dom = parse_html(&mut "<p></p>".to_string());

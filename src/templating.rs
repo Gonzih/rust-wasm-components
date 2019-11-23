@@ -14,27 +14,6 @@ pub enum Attribute {
     Handler(String),
 }
 
-impl Attribute {
-    pub fn is_handler(&self) -> bool {
-        match self {
-            Self::Handler(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_attribute(&self) -> bool {
-        !self.is_handler()
-    }
-
-    pub fn value(&self) -> &String {
-        match self {
-            Self::Static(value) => value,
-            Self::Dynamic(value) => value,
-            Self::Handler(value) => value,
-        }
-    }
-}
-
 pub type Attributes = HashMap<String, Attribute>;
 
 #[derive(Debug, Clone)]
