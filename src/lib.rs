@@ -1,7 +1,6 @@
 extern crate html5ever;
 extern crate web_sys;
 
-use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 macro_rules! log {
@@ -16,7 +15,6 @@ mod templating;
 mod utils;
 
 use framework::*;
-use html::Template;
 use templating::DomNode;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -43,6 +41,15 @@ impl Component for Root {
     }
 }
 
+impl Lookup for Root {
+    fn lookup(&self, k: &String) -> Option<LookupValue> {
+        match k.as_ref() {
+            "count" => Some(Box::new(self.count)),
+            _ => None,
+        }
+    }
+}
+
 // ************** Entrypoint **************
 #[wasm_bindgen]
 pub fn run() {
@@ -50,8 +57,7 @@ pub fn run() {
 
     let mut framework = Framework::new();
 
-    let mut wrapper = ComponentWrapper::new(Box::new(|| Box::new(Root::new())));
-    wrapper.add_lookup("count", Box::new(|| Box::new(325)));
+    let wrapper = ComponentWrapper::new(Box::new(|| Box::new(Root::new())));
 
     framework.register_component_wrapper("root", wrapper, "main");
 

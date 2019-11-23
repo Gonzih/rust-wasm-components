@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use crate::framework::Lookups;
+use crate::framework::ComponentInstance;
 
 #[derive(Debug, Clone)]
 pub enum Attribute {
@@ -111,7 +111,7 @@ impl VNode {
 }
 
 impl Node {
-    pub fn realize(&self, lookups: &Lookups) -> VNode {
+    pub fn realize(&self, component: &ComponentInstance) -> VNode {
         let data = match &self.data {
             txt @ NodeData::Text { .. } => txt.clone(),
             NodeData::Element { tag, attributes } => NodeData::Element {
@@ -119,18 +119,20 @@ impl Node {
                 attributes: attributes
                     .iter()
                     .map(|(k, v)| {
-                        let newv =
-                            match v {
-                                Attribute::Dynamic(value) => {
-                                    let v = (lookups.borrow().get::<str>(&*value).expect(
-                                        &*format!("could not find lookup fn for {}", value),
-                                    ))()
+                        let newv = match v {
+                            Attribute::Dynamic(value) => {
+                                let v = component
+                                    .lookup(value)
+                                    .expect(&*format!(
+                                        "could not find key {} in a component",
+                                        value
+                                    ))
                                     .to_string();
 
-                                    Attribute::Static(v)
-                                }
-                                attr @ _ => attr.clone(),
-                            };
+                                Attribute::Static(v)
+                            }
+                            attr @ _ => attr.clone(),
+                        };
 
                         (k.clone(), newv)
                     })
@@ -138,7 +140,11 @@ impl Node {
             },
         };
 
-        let children = self.children.iter().map(|ch| ch.realize(lookups)).collect();
+        let children = self
+            .children
+            .iter()
+            .map(|ch| ch.realize(component))
+            .collect();
 
         VNode { data, children }
     }

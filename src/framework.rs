@@ -1,26 +1,25 @@
 use crate::html::*;
 use crate::templating::*;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::io;
-use std::rc::Rc;
 
-type ComponentInstance = Box<dyn Component>;
+pub type ComponentInstance = Box<dyn Component>;
 type ComponentConstructor = Box<dyn Fn() -> ComponentInstance>;
 
 // ************** Trait that enforces component specific methods **************
-pub trait Component {
+pub type LookupValue = Box<dyn Display>;
+
+pub trait Lookup {
+    fn lookup(&self, k: &String) -> Option<LookupValue>;
+}
+
+pub trait Component: Lookup {
     fn render(&self) -> Vec<DomNode>;
 }
 
-pub type LookupValue = Box<dyn Display>;
-pub type LookupFn = Box<dyn Fn() -> LookupValue>;
-pub type Lookups = Rc<RefCell<HashMap<&'static str, LookupFn>>>;
-
 pub struct ComponentRuntime {
     pub component: ComponentInstance,
-    pub lookups: Lookups,
     pub template: Template,
 }
 
@@ -28,7 +27,7 @@ impl ComponentRuntime {
     pub fn render(&self) -> Vec<DomNode> {
         self.template
             .iter()
-            .map(|node| node.realize(&self.lookups).render())
+            .map(|node| node.realize(&self.component).render())
             .collect()
     }
 }
@@ -36,7 +35,6 @@ impl ComponentRuntime {
 pub struct ComponentWrapper {
     pub template: Template,
     pub constructor: ComponentConstructor,
-    pub lookups: Lookups,
 }
 
 impl ComponentWrapper {
@@ -44,18 +42,12 @@ impl ComponentWrapper {
         ComponentWrapper {
             constructor,
             template: vec![],
-            lookups: Rc::new(RefCell::new(HashMap::new())),
         }
-    }
-
-    pub fn add_lookup(&mut self, k: &'static str, f: LookupFn) {
-        self.lookups.borrow_mut().insert(k, f);
     }
 
     pub fn construct(&self) -> ComponentRuntime {
         ComponentRuntime {
             component: (self.constructor)(),
-            lookups: Rc::clone(&self.lookups),
             template: self.template.clone(),
         }
     }
@@ -63,9 +55,7 @@ impl ComponentWrapper {
 
 // ************** Framework structure **************
 pub struct Framework {
-    templates: HashMap<&'static str, Template>,
     components: HashMap<&'static str, ComponentWrapper>,
-    component_templates: HashMap<&'static str, &'static str>,
 }
 
 fn load_template_data(id: &'static str) -> String {
@@ -81,9 +71,7 @@ fn load_template_data(id: &'static str) -> String {
 impl Framework {
     pub fn new() -> Self {
         Framework {
-            templates: HashMap::new(),
             components: HashMap::new(),
-            component_templates: HashMap::new(),
         }
     }
 
