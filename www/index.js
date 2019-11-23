@@ -1,3 +1,3 @@
 import * as wasm from "rust-wasm-components";
 
-wasm.run();
+let framework = wasm.run();

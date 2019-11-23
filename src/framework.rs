@@ -1,8 +1,10 @@
 use crate::html::*;
 use crate::templating::*;
+use crate::vdom::{DomNode, VDom};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::io;
+use wasm_bindgen::prelude::*;
 
 pub type ComponentInstance = Box<dyn Component>;
 type ComponentConstructor = Box<dyn Fn() -> ComponentInstance>;
@@ -22,14 +24,18 @@ pub trait Component: Lookup {
 pub struct ComponentRuntime {
     pub component: ComponentInstance,
     pub template: Template,
+    pub vdom: VDom,
 }
 
 impl ComponentRuntime {
-    pub fn render(&self) -> Vec<DomNode> {
-        self.template
+    pub fn render(&mut self) -> Vec<DomNode> {
+        self.vdom = self
+            .template
             .iter()
-            .map(|node| node.realize(&self.component).render())
-            .collect()
+            .map(|node| node.realize(&self.component))
+            .collect();
+
+        self.vdom.iter().map(|vnode| vnode.to_dom()).collect()
     }
 }
 
@@ -50,13 +56,9 @@ impl ComponentWrapper {
         ComponentRuntime {
             component: (self.constructor)(),
             template: self.template.clone(),
+            vdom: vec![],
         }
     }
-}
-
-// ************** Framework structure **************
-pub struct Framework {
-    components: HashMap<&'static str, ComponentWrapper>,
 }
 
 fn load_template_data(id: &'static str) -> String {
@@ -69,10 +71,19 @@ fn load_template_data(id: &'static str) -> String {
         .inner_html()
 }
 
+// ************** Framework structure **************
+
+#[wasm_bindgen]
+pub struct Framework {
+    components: HashMap<&'static str, ComponentWrapper>,
+    instances: Vec<ComponentRuntime>,
+}
+
 impl Framework {
     pub fn new() -> Self {
         Framework {
             components: HashMap::new(),
+            instances: vec![],
         }
     }
 
@@ -96,7 +107,7 @@ impl Framework {
         log!("Mounting {} into #{}", component, target_id);
 
         let wrapper = self.instantiate(component);
-        let cmp = wrapper.construct();
+        let mut runtime = wrapper.construct();
 
         let target = web_sys::window()
             .expect("could not get js/window")
@@ -108,13 +119,15 @@ impl Framework {
         // clear element
         target.set_inner_html("");
 
-        let elements = &*cmp.render();
+        let elements = &*runtime.render();
 
         for element in elements {
             target
                 .append_child(element)
                 .expect("colud not append child");
         }
+
+        self.instances.push(runtime);
 
         Ok(())
     }

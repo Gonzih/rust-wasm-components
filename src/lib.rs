@@ -13,9 +13,10 @@ mod framework;
 mod html;
 mod templating;
 mod utils;
+mod vdom;
 
 use framework::*;
-use templating::DomNode;
+use vdom::DomNode;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -76,7 +77,7 @@ impl Lookup for Root {
 
 // ************** Entrypoint **************
 #[wasm_bindgen]
-pub fn run() {
+pub fn run() -> Framework {
     utils::set_panic_hook();
 
     let mut framework = Framework::new();
@@ -88,4 +89,6 @@ pub fn run() {
     framework
         .mount("main-container", "root")
         .expect("could not mount component");
+
+    framework
 }
