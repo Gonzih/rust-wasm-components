@@ -1,6 +1,5 @@
 /// This package represents intermidiate not evaluated dom tree
 /// that should be stored within a component as a templating language
-///
 use crate::framework::{ComponentInstance, DirtyInstance};
 use crate::vdom::*;
 use std::collections::HashMap;

@@ -1,4 +1,5 @@
-use crate::templating::*;
+/// This package should represent virtual dom structures and diffing and changeset generation
+/// functionality
 use std::collections::HashMap;
 use std::ops::Deref;
 use wasm_bindgen::prelude::*;

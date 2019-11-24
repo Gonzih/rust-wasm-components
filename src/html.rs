@@ -1,3 +1,4 @@
+/// This package contains all logic related to thml parsing and Template generation
 use html5ever::driver::ParseOpts;
 use html5ever::tendril::TendrilSink;
 use html5ever::tree_builder::TreeBuilderOpts;

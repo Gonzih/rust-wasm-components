@@ -1,3 +1,4 @@
+/// Framework public API surface
 use crate::html::*;
 use crate::templating::*;
 use crate::vdom::{DomNode, VDom};
