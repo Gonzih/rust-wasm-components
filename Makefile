@@ -33,3 +33,10 @@ setup:
 
 ci:
 	nix-shell shell.nix --run 'make setup test'
+
+TARGET_FILE := pkg/rust_wasm_components_bg.wasm
+release:
+	wasm-pack build --release
+	cp -f $(TARGET_FILE) $(TARGET_FILE).unpackaged
+	wasm-opt -Oz -o $(TARGET_FILE) $(TARGET_FILE).unpackaged
+	cd www && npm run build
