@@ -1,7 +1,7 @@
 /// This package represents intermidiate not evaluated dom tree
 /// that should be stored within a component as a templating language
 ///
-use crate::framework::ComponentInstance;
+use crate::framework::{ComponentInstance, DirtyInstance};
 use crate::vdom::*;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -29,7 +29,8 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn realize(&self, component: ComponentInstance) -> VNode {
+    /// What have I done...
+    pub fn realize(&self, component: ComponentInstance, dirty: DirtyInstance) -> VNode {
         let data = match &self.data {
             NodeData::Text { content } => VNodeData::Text {
                 content: content.clone(),
@@ -54,18 +55,38 @@ impl Node {
                                 VAttribute::Attribute(v)
                             }
                             Attribute::Handler(value) => {
+                                // weak references for closure
+                                // closure should not care if component object is still in memory
+                                // in ideal scenario closure should not exist with component not
+                                // being in memory
+                                // if this is the case everything is fucked anyways, so whatever
                                 let component_instance = Rc::downgrade(&component);
+                                let dirty_instance = Rc::downgrade(&dirty);
+                                // need to clone this and move this in to closure
                                 let message_value = value.clone();
-                                let closure = Closure::wrap(Box::new(move |e: web_sys::Event| {
-                                    let cmp = component_instance.upgrade();
 
-                                    match cmp {
-                                        Some(cmp_rc) => {
+                                let closure = Closure::wrap(Box::new(move |e: web_sys::Event| {
+                                    // Try to upgrade component weak reference to a strong one
+                                    let cmp = component_instance.upgrade();
+                                    if let Some(cmp_rc) = cmp {
+                                        // execute handle method on component and get bool value
+                                        let is_dirty =
                                             cmp_rc.borrow_mut().handle(message_value.clone());
+                                        // Try to upgrade dirty weak reference to a strong one
+                                        let dirty = dirty_instance.upgrade();
+
+                                        // if we are able to acquire pointer to dirty config
+                                        // and if we should mark our thing dirty we will set
+                                        // the flag via interrior mutability of RefCell
+                                        if is_dirty {
+                                            if let Some(dirty) = dirty {
+                                                dirty.borrow_mut().dirty = true;
+                                            }
                                         }
-                                        None => log!(
+                                    } else {
+                                        log!(
                                             "Could not get instance of commponent, might be freed"
-                                        ),
+                                        );
                                     };
 
                                     log!("Got value {:?} and did send {}", e, message_value);
@@ -85,7 +106,7 @@ impl Node {
         let children = self
             .children
             .iter()
-            .map(|ch| ch.realize(Rc::clone(&component)))
+            .map(|ch| ch.realize(Rc::clone(&component), Rc::clone(&dirty)))
             .collect();
 
         VNode { data, children }

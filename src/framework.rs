@@ -23,8 +23,21 @@ pub trait Component: Lookup {
     fn handle(&mut self, message: String) -> bool;
 }
 
+pub struct Dirty {
+    pub dirty: bool,
+}
+
+impl Dirty {
+    pub fn new() -> Self {
+        Self { dirty: true }
+    }
+}
+
+pub type DirtyInstance = Rc<RefCell<Dirty>>;
+
 pub struct ComponentRuntime {
     pub component: ComponentInstance,
+    pub dirty: DirtyInstance,
     pub template: Template,
     pub vdom: VDom,
 }
@@ -34,10 +47,14 @@ impl ComponentRuntime {
         self.vdom = self
             .template
             .iter()
-            .map(|node| node.realize(Rc::clone(&self.component)))
+            .map(|node| node.realize(Rc::clone(&self.component), Rc::clone(&self.dirty)))
             .collect();
 
-        self.vdom.iter().map(|vnode| vnode.to_dom()).collect()
+        let result = self.vdom.iter().map(|vnode| vnode.to_dom()).collect();
+
+        self.dirty.borrow_mut().dirty = true;
+
+        result
     }
 }
 
@@ -58,6 +75,7 @@ impl ComponentWrapper {
         ComponentRuntime {
             component: (self.constructor)(),
             template: self.template.clone(),
+            dirty: Rc::new(RefCell::new(Dirty::new())),
             vdom: vec![],
         }
     }
