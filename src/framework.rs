@@ -100,6 +100,13 @@ pub struct Framework {
     instances: Vec<ComponentRuntime>,
 }
 
+#[wasm_bindgen]
+impl Framework {
+    pub fn tick(&mut self) {
+        log!("Tick in Framework");
+    }
+}
+
 impl Framework {
     pub fn new() -> Self {
         Framework {
