@@ -44,6 +44,25 @@ pub enum VNodeData {
     },
 }
 
+pub enum Change {
+    Insert {
+        parent: SharableDomNode,
+        element: SharableDomNode,
+    },
+    Delete {
+        parent: SharableDomNode,
+        element: SharableDomNode,
+    },
+    SetAttributes {
+        element: SharableDomNode,
+        attributes: VAttributes,
+    },
+    AddHandler {
+        element: SharableDomNode,
+        attributes: VAttributes,
+    },
+}
+
 pub type VDom = Vec<VNode>;
 
 pub struct VNode {
@@ -96,5 +115,9 @@ impl VNode {
                 Rc::new(RefCell::new(DomNode::Element(element)))
             }
         }
+    }
+
+    pub fn diff(&self, other: &VNode) -> Vec<Change> {
+        vec![]
     }
 }
