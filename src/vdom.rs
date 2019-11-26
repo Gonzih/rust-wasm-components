@@ -1,9 +1,13 @@
 /// This package should represent virtual dom structures and diffing and changeset generation
 /// functionality
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+
+pub type SharableDomNode = Rc<RefCell<DomNode>>;
 
 pub enum DomNode {
     Text(web_sys::Text),
@@ -48,7 +52,7 @@ pub struct VNode {
 }
 
 impl VNode {
-    pub fn to_dom(&self) -> DomNode {
+    pub fn to_dom(&self) -> SharableDomNode {
         let document = web_sys::window()
             .expect("could not get js/window")
             .document()
@@ -58,7 +62,7 @@ impl VNode {
             VNodeData::Text { content } => {
                 let txt = document.create_text_node(&content.clone());
 
-                DomNode::Text(txt)
+                Rc::new(RefCell::new(DomNode::Text(txt)))
             }
             VNodeData::Element { tag, attributes } => {
                 let element = document
@@ -85,11 +89,11 @@ impl VNode {
 
                 for child in children {
                     element
-                        .append_child(&*child)
+                        .append_child(&*(child.borrow()))
                         .expect("could not insert a child");
                 }
 
-                DomNode::Element(element)
+                Rc::new(RefCell::new(DomNode::Element(element)))
             }
         }
     }

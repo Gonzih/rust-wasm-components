@@ -1,7 +1,7 @@
 /// Framework public API surface
 use crate::html::*;
 use crate::templating::*;
-use crate::vdom::{DomNode, VDom};
+use crate::vdom::{SharableDomNode, VDom};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -20,7 +20,7 @@ pub trait Lookup {
 }
 
 pub trait Component: Lookup {
-    fn render(&self) -> Vec<DomNode>;
+    fn render(&self) -> Vec<SharableDomNode>;
     fn handle(&mut self, message: String) -> bool;
 }
 
@@ -44,7 +44,7 @@ pub struct ComponentRuntime {
 }
 
 impl ComponentRuntime {
-    pub fn render(&mut self) -> Vec<DomNode> {
+    pub fn render(&mut self) -> Vec<SharableDomNode> {
         self.vdom = self
             .template
             .iter()
@@ -151,7 +151,7 @@ impl Framework {
 
         for element in elements {
             target
-                .append_child(element)
+                .append_child(&element.borrow())
                 .expect("colud not append child");
         }
 

@@ -19,7 +19,7 @@ mod utils;
 mod vdom;
 
 use framework::*;
-use vdom::DomNode;
+use vdom::SharableDomNode;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -53,7 +53,7 @@ impl Msg {
 
 // can be macro generated
 impl Component for Root {
-    fn render(&self) -> Vec<DomNode> {
+    fn render(&self) -> Vec<SharableDomNode> {
         vec![]
     }
 
