@@ -44,13 +44,14 @@ pub enum VNodeData {
     },
 }
 
+// No need for parent node pointer
+// Parent can be accessed with parentNode js call
+// in web_sys this would be parent_node() call on Node
 pub enum Change {
     Insert {
-        parent: SharableDomNode,
         element: SharableDomNode,
     },
     Delete {
-        parent: SharableDomNode,
         element: SharableDomNode,
     },
     SetAttributes {
@@ -61,6 +62,15 @@ pub enum Change {
         element: SharableDomNode,
         attributes: VAttributes,
     },
+    SetInnerText {
+        element: SharableDomNode,
+        content: String,
+    },
+}
+
+// Application should be trivial to implement
+impl Change {
+    pub fn apply() {}
 }
 
 pub type VDom = Vec<VNode>;

@@ -6,9 +6,19 @@
   </head>
   <body>
     <template id="main">
-      <p id="inner-p" :class="count">hello from html markup!</p>
+      <p id="inner-p" :class="count">count is {{ count }}</p>
       <button @click="increment">hello!</button>
       <a href="/">im a link</a>
+
+      <if condition="render_first">
+        <p> render the first option </p>
+      <else/>
+        <p> render the second option </p>
+      </if>
+
+      <for collection="collection_to_loop">
+        <p> element looped </p>
+      </for>
     </template>
     <div id="main-container"></div>
     <script src="./bootstrap.js"></script>

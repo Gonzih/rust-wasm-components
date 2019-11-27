@@ -62,6 +62,7 @@ fn extract_children(children: Ref<'_, Vec<Rc<rcdom::Node>>>) -> Template {
                 children,
             }),
             rcdom::NodeData::Text { contents } => res.push(Node {
+                // TODO need to extract elements in templating language in to attributes
                 data: NodeData::Text {
                     content: contents.borrow().to_string(),
                 },
