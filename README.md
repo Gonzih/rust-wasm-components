@@ -1,1 +1,1 @@
-[![CircleCI](https://circleci.com/gh/Gonzih/rust-wasm-components.svg?style=svg)](https://circleci.com/gh/Gonzih/rust-wasm-components)
+![Build](https://github.com/Gonzih/rust-wasm-components/workflows/CI/badge.svg)
