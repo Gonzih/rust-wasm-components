@@ -1,0 +1,15 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: nixos/nix
+    steps:
+    - uses: actions/checkout@v2
+    - name: Init
+      run: nix-env -i gnumake
+    - name: CI
+      run: make ci
